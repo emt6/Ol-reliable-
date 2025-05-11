@@ -1,0 +1,487 @@
+{
+    "system1": {
+        "trigger": {
+            "type": "command",
+            "command": "system1"
+        },
+        "docType": "InsuranceClaim",
+        "extractFrom": "rawText",
+        "extractFields": {
+            "specs.clientName": {
+                "pattern": "Name\\s*[:–]\\s*(?<value>.+)",
+                "group": "value"
+            },
+            "specs.clientAddress": {
+                "pattern": "Address\\s*[:–]\\s*(?<value>.+)",
+                "group": "value"
+            },
+            "specs.installationDate": {
+                "pattern": "Contract Install Date\\s*[:–]\\s*(?<value>\\d{4}-\\d{2}-\\d{2})",
+                "group": "value"
+            },
+            "specs.detachedRoof": {
+                "pattern": "Detached roof or structure\\s*[:–]\\s*(?<value>yes|no)",
+                "flags": "i",
+                "group": "value"
+            },
+            "specs.warrantyType": {
+                "pattern": "Warranty\\s*[:–]\\s*(?<value>[^\n]+)",
+                "group": "value"
+            },
+            "specs.additionalNotes": {
+                "pattern": "additional notes or upgrades\\s*[:–]\\s*(?<value>[\\s\\S]+?)(?=\n\\S+:|$)",
+                "flags": "i",
+                "group": "value"
+            },
+            "insuranceApproval.lineItems": {
+                "pattern": "(?<code>\\S+)\\s+(?<description>.+?)\\s+(?<quantity>\\d+(?:\\.\\d+)?)\\s*(?<unit>SF|SY|LF|EA)\\s+\\$?(?<rcvAmount>[0-9.,]+)\\s*(?:RCV|RC|Replace Cost Value)",
+                "flags": "gmi",
+                "group": "value",
+                "multiple": true
+            },
+            "agreement.paymentsApplied": {
+                "pattern": "(?:Progress Payment|Payments Applied)\\s*[:–]?\\s*\\$?(?<value>[0-9.,]+)",
+                "flags": "gmi",
+                "group": "value"
+            }
+        },
+        "sequence": "AUTO",
+        "outputs": [
+            {
+                "renderInChat": true,
+                "type": "image",
+                "style": "table",
+                "theme": "clean-grid",
+                "includePrintButton": true,
+                "action": "generateInvoiceImage",
+                "fileName": "invoice-{{claim.claimNumber}}.png",
+                "imagePrompt": "A visually styled image of invoice for the customer. At top left is the logo… To the right: 'INVOICE' in bold with metadata—Claim Number: {{claim.claimNumber}}, Beneath that are client details: {{specs.clientName}}, {{specs.clientAddress}}.\nCentered below is a professional summary table with 5 rows:\nTotal RCV: ${{claim.RCV}}\nSupplements Added: ${{claim.supplementsTotal}}\nCredit Backs: ${{claim.creditBacksTotal}}\nPayments Applied: ${{claim.paymentsApplied}}\nBALANCE DUE: ${{claim.balanceDue}}",
+                "dynamicFields": {
+                    "specs.clientName": {
+                        "pattern": "Name\\s*[:–]\\s*(?<value>.+)",
+                        "group": "value"
+                    },
+                    "specs.clientAddress": {
+                        "pattern": "Address\\s*[:–]\\s*(?<value>.+)",
+                        "group": "value"
+                    },
+                    "claim.claimNumber": {
+                        "pattern": "Claim Number\\s*[:–]\\s*(?<value>\\w+)",
+                        "group": "value"
+                    },
+                    "generateInvoiceID": {
+                        "value": "{{format('INV-' + Date.now())}}"
+                    },
+                    "currentDate": {
+                        "value": "{{formatDate(new Date(), 'YYYY-MM-DD')}}"
+                    },
+                    "claim.RCV": {
+                        "pattern": "(?:Total Replacement Cost Value|RCV|Replace Cost Value)\\s*[:–]\\s*\\$?(?<value>[0-9,\\.]+)",
+                        "flags": "gmi",
+                        "group": "value",
+                        "multiple": true
+                    },
+                    "claim.supplementsTotal": {
+                        "compute": "{{parseFloat(claim.RCV) - parseFloat(claim.baseRCV)}}",
+                        "fallback": "Pending"
+                    },
+                    "claim.creditBacksTotal": {
+                        "pattern": "(?:Upgrades\\s*/\\s*Credits?|Credit\\s*Backs?)\\s*[:–]\\s*\\$?(?<value>[0-9,\\.]+)",
+                        "group": "value"
+                    },
+                    "claim.paymentsApplied": {
+                        "pattern": "Payments Applied\\s*[:–]\\s*\\$?(?<value>[0-9,\\.]+)",
+                        "group": "value"
+                    },
+                    "claim.balanceDue": {
+                        "pattern": "Balance Due\\s*[:–]\\s*\\$?(?<value>[0-9,\\.]+)",
+                        "group": "value"
+                    }
+                }
+            },
+            {
+                "renderInChat": true,
+                "type": "table",
+                "titlePrefix": "Material List for:",
+                "includeAddress": true,
+                "includeProcessedDate": true,
+                "columns": [
+                    "Item #",
+                    "Product Description",
+                    "Quantity",
+                    "Unit",
+                    "Equation Used"
+                ],
+                "hideColumns": [
+                    "Equation Used"
+                ],
+                "measurementSource": [
+                    "hover",
+                    "eagleView"
+                ],
+                "standardFields": {
+                    "squares": [
+                        "hoverReport.roofArea",
+                        "eagleView.totalSquares"
+                    ],
+                    "ridgeLength": [
+                        "hoverReport.ridges",
+                        "eagleView.ridge"
+                    ],
+                    "hipLength": [
+                        "hoverReport.hips",
+                        "eagleView.hip"
+                    ],
+                    "valleyLength": [
+                        "hoverReport.valleys",
+                        "eagleView.valleys"
+                    ],
+                    "eaveLength": [
+                        "hoverReport.eaves",
+                        "eagleView.eaves"
+                    ],
+                    "rakeLength": [
+                        "hoverReport.rakes",
+                        "eagleView.rakes"
+                    ],
+                    "dripEdgeLength": [
+                        "hoverReport.dripEdge",
+                        "eagleView.dripEdge"
+                    ],
+                    "stepFlashingLength": [
+                        "hoverReport.stepFlashing",
+                        "eagleView.stepFlashing"
+                    ],
+                    "flashingLength": [
+                        "hoverReport.flashing",
+                        "eagleView.flashing"
+                    ],
+                    "pipeCollars": [
+                        "hoverReport.pipeCollars",
+                        "eagleView.pipeCollars"
+                    ],
+                    "vents": [
+                        "hoverReport.vents",
+                        "eagleView.vents"
+                    ],
+                    "shutters": [
+                        "hoverReport.shutters",
+                        "eagleView.shutters"
+                    ],
+                    "windowArea": [
+                        "hoverReport.windowArea",
+                        "eagleView.windowArea"
+                    ],
+                    "doorArea": [
+                        "hoverReport.doorArea",
+                        "eagleView.doorArea"
+                    ],
+                    "insideCorners": [
+                        "hoverReport.insideCorners",
+                        "eagleView.insideCorners"
+                    ],
+                    "outsideCorners": [
+                        "hoverReport.outsideCorners",
+                        "eagleView.outsideCorners"
+                    ],
+                    "levelStarter": [
+                        "hoverReport.levelStarter",
+                        "eagleView.levelStarter"
+                    ],
+                    "slopedTrim": [
+                        "hoverReport.slopedTrim",
+                        "eagleView.slopedTrim"
+                    ],
+                    "verticalTrim": [
+                        "hoverReport.verticalTrim",
+                        "eagleView.verticalTrim"
+                    ],
+                    "levelFrieze": [
+                        "hoverReport.levelFriezeBoard",
+                        "eagleView.levelFrieze"
+                    ],
+                    "slopedFrieze": [
+                        "hoverReport.slopedFriezeBoard",
+                        "eagleView.slopedFrieze"
+                    ],
+                    "soffitArea": [
+                        "hoverReport.soffitArea",
+                        "eagleView.soffitArea"
+                    ]
+                },
+                "materialsLogic": [
+                    {
+                        "description": "GAF Timberline HDZ Shingles",
+                        "unit": "BD",
+                        "quantityEquation": "(squares * 1.10) * 3",
+                        "color": "{{specs.shingleColor}}",
+                        "roundQuantities": "ceil",
+                        "keywords": [
+                            "shingles",
+                            "architectural"
+                        ]
+                    },
+                    {
+                        "description": "GAF Pro-Start Starter Strip",
+                        "unit": "BD",
+                        "quantityEquation": "eaveLength / 120",
+                        "roundQuantities": "ceil",
+                        "keywords": [
+                            "starter",
+                            "starter row",
+                            "starter strip"
+                        ]
+                    },
+                    {
+                        "description": "GAF Seal-A-Ridge Ridge Cap",
+                        "unit": "LF",
+                        "quantityEquation": "(ridgeLength + hipLength) / 25",
+                        "color": "{{specs.shingleColor}}",
+                        "roundQuantities": "ceil",
+                        "keywords": [
+                            "ridge cap",
+                            "hip and ridge"
+                        ]
+                    },
+                    {
+                        "description": "GAF Snow Country Ridge Vent",
+                        "unit": "LF",
+                        "quantityEquation": "ridgeLength / 4",
+                        "roundQuantities": "ceil",
+                        "keywords": [
+                            "ridge vent"
+                        ]
+                    },
+                    {
+                        "description": "F5 Aluminum Drip Edge",
+                        "unit": "LF",
+                        "quantityEquation": "(eaveLength + rakeLength) / 10",
+                        "color": "{{specs.dripedgeColor}}",
+                        "roundQuantities": "ceil"
+                    },
+                    {
+                        "description": "Step Flashing 5x5x8",
+                        "unit": "BX",
+                        "quantityEquation": "(stepFlashingLength * 12 / 8) / 50",
+                        "color": "{{specs.flashingColor}}",
+                        "roundQuantities": "ceil"
+                    },
+                    {
+                        "description": "GAF weatherwatch",
+                        "unit": "RL",
+                        "quantityEquation": "(eaveLength + valleyLength) / 65",
+                        "roundQuantities": "ceil",
+                        "keywords": [
+                            "ice water shield"
+                        ]
+                    },
+                    {
+                        "description": "GAF feltbuster",
+                        "unit": "RL",
+                        "quantityEquation": "((squares * 1.10) / 10)",
+                        "roundQuantities": "ceil",
+                        "keywords": [
+                            "synthetic underlayment",
+                            "felt"
+                        ]
+                    },
+                    {
+                        "description": "Trim Coil",
+                        "unit": "RL",
+                        "quantityEquation": "flashingLength / 50",
+                        "color": "{{specs.flashingColor}}",
+                        "roundQuantities": "ceil"
+                    },
+                    {
+                        "description": "Slant Vents",
+                        "unit": "EA",
+                        "quantityEquation": "vents",
+                        "color": "{{specs.slantventColor}}"
+                    },
+                    {
+                        "description": "Open Valley Metal",
+                        "unit": "EA",
+                        "quantityEquation": "valleyLength > 0 ? Math.ceil(valleyLength / 20) : 1",
+                        "color": "{{specs.valleyColor}}",
+                        "roundQuantities": "ceil"
+                    },
+                    {
+                        "description": "Pipe Collar",
+                        "unit": "EA",
+                        "quantityEquation": "pipeCollars",
+                        "color": "{{specs.pipecollarColor}}"
+                    },
+                    {
+                        "description": "1 1/4in coil roof nail",
+                        "unit": "BOX",
+                        "quantityEquation": "squares / 18"
+                    },
+                    {
+                        "description": "sealant tubes",
+                        "unit": "tube",
+                        "quantityEquation": "squares / 10",
+                        "color": "{{specs.flashingColor}}"
+                    }
+                ]
+            },
+            {
+                "renderInChat": true,
+                "type": "table",
+                "titlePrefix": "Warranty Verification",
+                "fields": {
+                    "warranty": {
+                        "pattern": "{{specs.warrantyType}}",
+                        "map": {
+                            "Lifetime Limited": "System Plus",
+                            "System Plus": "System Plus",
+                            "Golden Pledge": "Golden Pledge",
+                            "Silver Pledge": "Silver Pledge"
+                        }
+                    },
+                    "requirements": {
+                        "System Plus": [
+                            "GAF Timberline HDZ",
+                            "GAF Pro-Start starter strip",
+                            "{{ridgeCheck ? 'GAF Snow Country Ridge Vent' : 'GAF WeatherWatch'}}"
+                        ],
+                        "Silver Pledge": [
+                            "GAF Timberline HDZ",
+                            "GAF Pro-Start starter strip",
+                            "{{ridgeCheck ? 'GAF Snow Country Ridge Vent' : 'GAF WeatherWatch'}}",
+                            "{{ridgeCheck ? 'GAF Feltbuster' : 'GAF Pipe Collar'}}"
+                        ],
+                        "Golden Pledge": [
+                            "GAF Timberline HDZ",
+                            "GAF Pro-Start starter strip",
+                            "GAF Snow Country Ridge Vent",
+                            "GAF WeatherWatch",
+                            "GAF Feltbuster",
+                            "GAF Pipe Collar"
+                        ]
+                    },
+                    "ridgeCheck": {
+                        "pattern": "(?!no ridge vent|no shingle over).*",
+                        "flags": "i",
+                        "source": [
+                            "specs.additionalNotes"
+                        ]
+                    },
+                    "onPass": {
+                        "action": "replaceExcess",
+                        "limit": 5,
+                        "mapping": {
+                            "GAF Pro-Start Starter Strip": "HouseBrand Starter Strip",
+                            "GAF Seal-A-Ridge Ridge Cap": "HouseBrand Ridge Cap",
+                            "GAF Snow Country Ridge Vent": "HouseBrand Ridge Vent",
+                            "GAF WeatherWatch": "HouseBrand Ice & Water Shield",
+                            "GAF Feltbuster": "HouseBrand Synthetic Underlayment",
+                            "GAF Pipe Collar – Match Flashing Color": "HouseBrand Pipe Collar"
+                        }
+                    }
+                }
+            },
+            {
+                "renderInChat": true,
+                "type": "table",
+                "titlePrefix": "Material List 2",
+                "applyExtraWorkFilter": true,
+                "sourceFields": [
+                    "insuranceApproval.lineItems",
+                    "specs.additionalNotes"
+                ],
+                "exclude": {
+                    "fromMaterialList": {
+                        "path": "formatRules.materialListTable.sampleRows",
+                        "field": "Product Description"
+                    },
+                    "additional": [
+                        "Vapor Barrier",
+                        "Pump Jacks",
+                        "Light Fixtures",
+                        "Dump Trailer",
+                        "Drip Edge",
+                        "Shingles",
+                        "Starter Strip",
+                        "Ridge Cap",
+                        "Underlayment",
+                        "Nails",
+                        "Sealant",
+                        "Pipe Collar",
+                        "Ridge Vent"
+                    ]
+                }
+            },
+            {
+                "renderInChat": true,
+                "type": "schedule email",
+                "fields": {
+                    "Customer": "{{specs.clientName}}",
+                    "Address": "{{specs.clientAddress}}",
+                    "Install Date": "{{specs.installationDate}}",
+                    "Scope of Work": "Full Roof Replacement",
+                    "Detached structure": "{{specs.detachedRoof}}",
+                    "Shingle Color": "{{specs.shingleColor}}",
+                    "Warranty": "{{specs.warrantyType}}",
+                    "Extra Work Scope": "{{secondaryMaterialList.map(item => `${item['Line #']} – ${item['Product Description']} – ${item['Quantity']}`).join(', ')}}"
+                }
+            },
+            {
+                "renderInChat": true,
+                "type": "table",
+                "grossProfit": {
+                    "metrics": {
+                        "Total Revenue": "$[Insurance RCV]",
+                        "Material Cost": "$[total material]",
+                        "Labor Cost": "$[entered or default]",
+                        "Gross Profit$": "$[Revenue - Costs]",
+                        "Gross Profit %": "[GP%]"
+                    },
+                    "logic": {
+                        "GP%": "(Revenue - Costs) / Revenue × ",
+                        "googleSheetsExport": {
+                            "format": "Pipe-Delimited",
+                            "sampleRow": "Sales rep| customer | 70.86 | 42.3% | $7,450.00 | $2,900.00 | $4,550.00 | SC1-013476729"
+                        }
+                    }
+                }
+            },
+            {
+                "qaFlaggingSystem": {
+                    "label": "Review Summary",
+                    "checks": [
+                        {
+                            "condition": "grossProfit.percentage > 60",
+                            "emoji": "🚩",
+                            "message": "GP > 60%"
+                        },
+                        {
+                            "condition": "EagleView.wasteFactor > 0.10",
+                            "emoji": "🚩",
+                            "message": "EagleView suggested waste factor > default 10%"
+                        },
+                        {
+                            "condition": "materialsLogic.find(item => item.description.includes('Ridge Vent') && item.quantity > 25)",
+                            "emoji": "🚩",
+                            "message": "for excess Ridge Vent > 25 pcs"
+                        },
+                        {
+                            "condition": "!specs.warrantyType || specs.warrantyType.match(/lifetime|standard|limited/i)",
+                            "emoji": "🚩",
+                            "message": "Warranty missing or generic used"
+                        },
+                        {
+                            "condition": "documents.some(doc => doc.extractError)",
+                            "emoji": "🚩",
+                            "message": "could not extract data from document ___, manual review needed"
+                        },
+                        {
+                            "condition": "insuranceApproval.lineItems.some(item => !materialsLogic.some(mat => mat.description.includes(item.description)))",
+                            "emoji": "🚩",
+                            "message": "Item mismatch in approval"
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+}
