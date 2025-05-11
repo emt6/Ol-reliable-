@@ -1,0 +1,158 @@
+openapi: 3.0.1
+info:
+  title: Insurance-Claim Plugin API
+  version: "1.0.0"
+  description: |
+    1) POST raw claim text to /extract → returns parsed fields  
+    2) POST to /invoice → returns a PNG invoice image  
+    3) (Optionally) POST to /material-list → returns your “extra work” items
+
+servers:
+  - url: https://YOUR-DOMAIN.COM     # ← replace with your hosted API root
+
+paths:
+
+  /extract:
+    post:
+      summary: Parse insurance-claim PDF/text
+      requestBody:
+        required: true
+        content:
+          text/plain:      # or application/pdf if you accept binary
+            schema:
+              type: string
+              description: "The raw text (or PDF payload) of the claim spec sheet"
+      responses:
+        "200":
+          description: Parsed fields
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InsuranceClaim"
+
+  /invoice:
+    post:
+      summary: Generate invoice image
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - claimNumber
+              properties:
+                claimNumber:
+                  type: string
+                specs:
+                  $ref: "#/components/schemas/Specs"
+                claim:
+                  $ref: "#/components/schemas/ClaimTotals"
+      responses:
+        "200":
+          description: PNG image of the invoice
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+
+  /material-list:
+    post:
+      summary: List extra-work items (approval minus roofing scope)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                approvalItems:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/LineItem"
+                primaryMaterials:
+                  type: array
+                  items:
+                    type: string
+                    description: "Description keywords to exclude"
+      responses:
+        "200":
+          description: Filtered extra work items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LineItem"
+
+components:
+  schemas:
+
+    Specs:
+      type: object
+      properties:
+        clientName:
+          type: string
+        clientAddress:
+          type: string
+        installationDate:
+          type: string
+          format: date
+        detachedRoof:
+          type: string
+          enum: [yes,no]
+        warrantyType:
+          type: string
+        additionalNotes:
+          type: string
+
+    ClaimTotals:
+      type: object
+      properties:
+        claimNumber:
+          type: string
+        RCV:
+          type: number
+        supplementsTotal:
+          type: number
+        creditBacksTotal:
+          type: number
+        paymentsApplied:
+          type: number
+        balanceDue:
+          type: number
+
+    InsuranceClaim:
+      type: object
+      properties:
+        specs:
+          $ref: "#/components/schemas/Specs"
+        claim:
+          $ref: "#/components/schemas/ClaimTotals"
+        insuranceApproval:
+          type: object
+          properties:
+            lineItems:
+              type: array
+              items:
+                $ref: "#/components/schemas/LineItem"
+        agreement:
+          type: object
+          properties:
+            paymentsApplied:
+              type: number
+
+    LineItem:
+      type: object
+      properties:
+        code:
+          type: string
+        description:
+          type: string
+        quantity:
+          type: number
+        unit:
+          type: string
+        rcvAmount:
+          type: number
