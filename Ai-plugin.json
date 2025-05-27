@@ -1,8 +1,5 @@
 {
     "system1": {
-        "trigger": {
-            "type": "command",
-            "command": "system1"
         },
         "docType": "InsuranceClaim",
         "extractFrom": "rawText",
