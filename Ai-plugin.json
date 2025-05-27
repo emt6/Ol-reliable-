@@ -1,5 +1,47 @@
 {
     "system1": {
+        "docType": "InsuranceClaim",
+        "extractFrom": "rawText",
+        "extractFields": {
+            "specs.clientName": {
+                "pattern": "Name\\s*[:–]\\s*(?<value>.+)",
+                "group": "value"
+            },
+            "specs.clientAddress": {
+                "pattern": "Address\\s*[:–]\\s*(?<value>.+)",
+                "group": "value"
+            },
+            "specs.installationDate": {
+                "pattern": "Contract Install Date\\s*[:–]\\s*(?<value>\\d{4}-\\d{2}-\\d{2})",
+                "group": "value"
+            },
+            "specs.detachedRoof": {
+                "pattern": "Detached roof or structure\\s*[:–]\\s*(?<value>yes|no)",
+                "flags": "i",
+                "group": "value"
+            },
+            "specs.warrantyType": {
+                "pattern": "Warranty\\s*[:–]\\s*(?<value>[^\n]+)",
+                "group": "value"
+            },
+            "specs.additionalNotes": {
+                "pattern": "additional notes or upgrades\\s*[:–]\\s*(?<value>[\\s\\S]+?)(?=\n\\S+:|$)",
+                "flags": "i",
+                "group": "value"
+            },
+            "insuranceApproval.lineItems": {
+                "pattern": "(?<code>\\S+)\\s+(?<description>.+?)\\s+(?<quantity>\\d+(?:\\.\\d+)?)\\s*(?<unit>SF|SY|LF|EA)\\s+\\$?(?<rcvAmount>[0-9.,]+)\\s*(?:RCV|RC|Replace Cost Value)",
+                "flags": "gmi",
+                "group": "value",
+                "multiple": true
+            },
+            "agreement.paymentsApplied": {
+                "pattern": "(?:Progress Payment|Payments Applied)\\s*[:–]?\\s*\\$?(?<value>[0-9.,]+)",
+                "flags": "gmi",
+                "group": "value"
+            }
+        },
+
         "sequence": "AUTO",
         "outputs": [
             {
