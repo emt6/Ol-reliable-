@@ -1,6 +1,5 @@
 {
     "system1": {
-        },
         "docType": "InsuranceClaim",
         "extractFrom": "rawText",
         "extractFields": {
@@ -482,3 +481,4 @@
             }
         ]
     }
+}
